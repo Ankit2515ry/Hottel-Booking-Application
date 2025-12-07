@@ -1,24 +1,29 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# ------------------------------------
+# 1. PYTHON BACKEND (The cause of your warnings)
+# ------------------------------------
+# Ignore the Python virtual environment folder
+/backend/venv/
+# Ignore Python cache files
+__pycache__/
+*.pyc
+.mypy_cache/
+.pytest_cache/
+.vscode/
 
-node_modules
-dist
-dist-ssr
-*.local
+# ------------------------------------
+# 2. NODE/VITE FRONTEND (Your current .gitignore contents)
+# ------------------------------------
+# Ignore node_modules folder
+/frontend/node_modules/
+# Vite output directory
+/frontend/dist/
+# Log files
+npm-debug.log
+.yarn-integrity
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+# ------------------------------------
+# 3. ENVIRONMENT & SECRETS
+# ------------------------------------
+# Ignore local settings and secrets (CRITICAL for security)
+*.env
+.env.local
