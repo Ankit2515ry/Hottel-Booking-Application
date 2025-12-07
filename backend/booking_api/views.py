@@ -2,8 +2,10 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import generics
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from django.db.models import Q
 from django.contrib.auth.models import User # For RegisterView
+from .permissions import IsHotelManagerOrReadOnly
 
 from .models import Hotel, Room, Booking
 from .serializers import (
@@ -61,14 +63,35 @@ class HotelViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(serializer.data)
 
 
-class RoomViewSet(viewsets.ReadOnlyModelViewSet):
+class RoomViewSet(viewsets.ModelViewSet):
+    
     """
-    Provides read-only access to individual room details: /api/rooms/{id}/
-    (Used by the BookingPage to fetch price details).
+    Handles read-only for public, and CRUD for the hotel manager.
     """
     queryset = Room.objects.all()
     serializer_class = RoomSerializer
-    permission_classes = [permissions.AllowAny] # Publicly accessible
+    permission_classes = [IsHotelManagerOrReadOnly] # <<< APPLY NEW PERMISSION
+
+    def perform_create(self, serializer):
+        # When creating a room, we need to ensure the room's hotel is managed by the user.
+        # This requires the hotel ID to be passed in the request data.
+        hotel_id = self.request.data.get('hotel')
+        
+        if not hotel_id:
+            raise ValidationError({'hotel': ['Hotel ID must be provided.']})
+
+        try:
+            hotel = Hotel.objects.get(pk=hotel_id)
+        except Hotel.DoesNotExist:
+            raise ValidationError({'hotel': ['Invalid hotel ID.']})
+
+        # CRITICAL CHECK: Check if the requesting user is the manager of this specific hotel
+        if hotel.manager == self.request.user:
+            # If the manager matches, save the room linked to that hotel
+            serializer.save(hotel=hotel)
+        else:
+            # If the user is authenticated but not the manager of this hotel, deny access
+            raise PermissionDenied("You do not manage this hotel and cannot add rooms to it.")
 
 
 # --- AUTHENTICATED/SECURED VIEWS (Booking and Registration) ---

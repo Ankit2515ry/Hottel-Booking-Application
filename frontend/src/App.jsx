@@ -12,32 +12,35 @@ import BookingPage from './pages/BookingPage';
 import ProtectedRoute from './components/ProtectedRoute'; // <-- NEW IMPORT
 
 import MyBookingsPage from './pages/MyBookingsPage';
+import HotelDashboardPage from './pages/HotelDashboardPage'
 
 function App() {
-  return (
-    <> 
-      <Header /> 
-      
-      <main className="container">
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/hotel/:id" element={<HotelDetailPage />} />
-          <Route path="/login" element={<LoginPage />} /> 
-          <Route path="/register" element={<RegisterPage />} /> 
+    return (
+        <> 
+        <Header /> 
+        <main className="container">
+            <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/hotel/:id" element={<HotelDetailPage />} />
+                <Route path="/login" element={<LoginPage />} /> 
+                <Route path="/register" element={<RegisterPage />} /> 
 
-          {/* --- PROTECTED BOOKING ROUTE --- */}
-          <Route 
-                path="/booking/:roomId" 
-                element={<ProtectedRoute><BookingPage /></ProtectedRoute>} 
-            />
-          
-          {/* My Bookings/Profile Page */}
-          {/* Note: If MyBookingsPage is wrapped internally, you might not need ProtectedRoute here */}
-          <Route path="/profile" element={<MyBookingsPage />} />
-          </Routes>
-      </main>
-    </>
-  );
+                {/* --- PROTECTED BOOKING ROUTE --- */}
+                <Route 
+                    path="/booking/:roomId" 
+                    element={<ProtectedRoute><BookingPage /></ProtectedRoute>} 
+                />
+            
+                {/* My Bookings/Profile Page */}
+                {/* Note: If MyBookingsPage is wrapped internally, you might not need ProtectedRoute here */}
+                <Route path="/profile" element={<MyBookingsPage />} />
+
+
+                <Route path="/dashboard" element={<HotelDashboardPage />} />
+            </Routes>
+        </main>
+        </>
+    );
 }
 
 export default App;

@@ -4,6 +4,10 @@ from datetime import date
 
 # --- 1. Hotel Model ---
 class Hotel(models.Model):
+
+    manager = models.OneToOneField(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    
     name = models.CharField(max_length=200)
     city = models.CharField(max_length=100)
     address = models.CharField(max_length=255)

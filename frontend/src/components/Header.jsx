@@ -26,6 +26,11 @@ function Header() {
                     {/* --- Conditional Links based on Login Status --- */}
                     {user ? ( // If the 'user' object is present (logged in)
                         <>
+                            {/* Dashboard Link (Accessible to all logged-in users for now) */}
+                            <li style={styles.navItem}>
+                                <Link to="/dashboard" style={styles.navLink}>Manager Dashboard</Link>
+                            </li>
+                            
                             {/* Display Username */}
                             <li style={{...styles.navItem, color: '#ffc107', fontWeight: 'bold'}}>
                                 Hello, {user}!
