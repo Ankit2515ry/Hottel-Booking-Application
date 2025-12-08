@@ -68,7 +68,12 @@ const AddRoomForm = ({ hotelId, authTokens, onRoomAdded }) => {
             <h3 style={styles.formHeader}>Add New Room Type</h3>
             {message && <p style={message.startsWith('Error') ? styles.errorMessage : styles.successMessage}>{message}</p>}
             
-            <input name="room_type" value={formData.room_type} onChange={handleChange} placeholder="Room Type (e.g., Deluxe, Suite)" required style={styles.input} />
+            <select name="room_type" value={formData.room_type} onChange={handleChange} placeholder="Room Type (e.g., Deluxe, Suite)" required style={styles.input} > 
+                <option value="single">Single</option>
+                <option value="double">Double</option>
+                <option value="suite">Suite</option>
+                <option value="deluxe">Deluxe</option>
+            </select>
             <input name="price_per_night" value={formData.price_per_night} onChange={handleChange} placeholder="Price per Night" type="number" step="0.01" required style={styles.input} />
             <input name="max_guests" value={formData.max_guests} onChange={handleChange} placeholder="Max Guests" type="number" required style={styles.input} />
             <input name="total_rooms" value={formData.total_rooms} onChange={handleChange} placeholder="Total Rooms of this Type" type="number" required style={styles.input} />
