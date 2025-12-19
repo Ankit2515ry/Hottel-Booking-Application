@@ -10,6 +10,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage'; 
 import BookingPage from './pages/BookingPage';
 import ProtectedRoute from './components/ProtectedRoute'; // <-- NEW IMPORT
+import DashboardRedirect from './pages/DashboardRedirect';
 
 import MyBookingsPage from './pages/MyBookingsPage';
 import HotelDashboardPage from './pages/HotelDashboardPage'
@@ -32,11 +33,11 @@ function App() {
                 />
             
                 {/* My Bookings/Profile Page */}
-                {/* Note: If MyBookingsPage is wrapped internally, you might not need ProtectedRoute here */}
-                <Route path="/profile" element={<MyBookingsPage />} />
-
-
-                <Route path="/dashboard" element={<HotelDashboardPage />} />
+                <Route path="/dashboard" element={
+                    <ProtectedRoute>
+                        <DashboardRedirect />
+                    </ProtectedRoute>
+                } />
             </Routes>
         </main>
         </>

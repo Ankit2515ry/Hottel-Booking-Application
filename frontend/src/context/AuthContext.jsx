@@ -1,6 +1,6 @@
 // frontend/src/context/AuthContext.jsx
 
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
@@ -9,23 +9,55 @@ const BASE_URL = 'http://127.0.0.1:8000/api/';
 
 export const AuthProvider = ({ children }) => {
     const navigate = useNavigate();
-    // Initialize state from local storage (to persist login across refresh)
+
+    // --- State Initialization ---
     const [authTokens, setAuthTokens] = useState(() => 
         localStorage.getItem('authTokens') 
             ? JSON.parse(localStorage.getItem('authTokens')) 
             : null
     );
-    // User is stored as a username string
     const [user, setUser] = useState(() => 
         localStorage.getItem('authTokens') 
             ? JSON.parse(localStorage.getItem('authTokens')).user 
             : null
     );
-    const [loading, setLoading] = useState(false);
+    
+    // 1. FIXED: Define isManager state
+    const [isManager, setIsManager] = useState(false);
+    // Use a secondary loading state to prevent flickering during status checks
+    const [loading, setLoading] = useState(true);
 
-    // --- 1. Login Function (Talks to Django: /api/token/) ---
+    // --- Function to check if the user is a manager ---
+    const checkManagerStatus = async (tokens) => {
+        if (!tokens) {
+            setIsManager(false);
+            return;
+        }
+        try {
+            // Attempt to fetch the manager's hotel
+            await axios.get(`${BASE_URL}hotels/my_hotel/`, {
+                headers: { Authorization: `Bearer ${tokens.access}` }
+            });
+            setIsManager(true);
+        } catch (error) {
+            // If it fails (403 or 404), the user is not a manager
+            setIsManager(false);
+        }
+    };
+
+    // --- Check status on app load/refresh ---
+    useEffect(() => {
+        const initializeAuth = async () => {
+            if (authTokens) {
+                await checkManagerStatus(authTokens);
+            }
+            setLoading(false);
+        };
+        initializeAuth();
+    }, [authTokens]);
+
+    // --- Login Function ---
     const loginUser = async (username, password) => {
-        setLoading(true);
         try {
             const response = await axios.post(`${BASE_URL}token/`, {
                 username,
@@ -34,34 +66,33 @@ export const AuthProvider = ({ children }) => {
             
             if (response.status === 200) {
                 const data = response.data;
-                data.user = username; // Attach username for easy context access
+                data.user = username;
 
                 setAuthTokens(data);
                 setUser(username);
                 localStorage.setItem('authTokens', JSON.stringify(data));
                 
-                setLoading(false);
-                return true; // Success
+                // Check manager status immediately after login
+                await checkManagerStatus(data);
+                return true;
             }
         } catch (error) {
-            setLoading(false);
             console.error("Login failed:", error.response?.data);
-            // Returning false or null on failure is critical for error handling on the page
             return false; 
         }
     };
 
-    // --- 2. Logout Function ---
+    // --- Logout Function ---
     const logoutUser = () => {
         setAuthTokens(null);
         setUser(null);
+        setIsManager(false); // FIXED: Reset manager status on logout
         localStorage.removeItem('authTokens');
-        navigate('/login'); // Redirect to login after successful logout
+        navigate('/login');
     };
     
-    // --- 3. Registration Function (Talks to Django: /api/register/) ---
+    // --- Registration Function ---
     const registerUser = async (username, email, password, password2) => {
-        setLoading(true);
         try {
             const response = await axios.post(`${BASE_URL}register/`, {
                 username,
@@ -70,20 +101,18 @@ export const AuthProvider = ({ children }) => {
                 password2
             });
             
-            setLoading(false);
             if (response.status === 201) {
                 return { success: true, message: "Registration successful. Please login." };
             }
         } catch (error) {
-            setLoading(false);
-            // Return errors from Django for display on the Register page
             return { success: false, errors: error.response?.data };
         }
-    }
+    };
 
     const contextData = {
         user,
         authTokens,
+        isManager,
         loading,
         loginUser,
         logoutUser,
@@ -92,11 +121,12 @@ export const AuthProvider = ({ children }) => {
 
     return (
         <AuthContext.Provider value={contextData}>
-            {children}
+            {/* Only render the app once we've finished the initial 
+               loading check for tokens and manager status.
+            */}
+            {!loading ? children : <div style={{textAlign:'center', padding:'50px'}}>Loading Application...</div>}
         </AuthContext.Provider>
     );
 };
 
-export const useAuth = () => {
-    return useContext(AuthContext);
-};
+export const useAuth = () => useContext(AuthContext);

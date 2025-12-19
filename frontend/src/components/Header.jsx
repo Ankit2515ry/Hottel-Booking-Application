@@ -26,24 +26,16 @@ function Header() {
                     {/* --- Conditional Links based on Login Status --- */}
                     {user ? ( // If the 'user' object is present (logged in)
                         <>
-                            {/* Dashboard Link (Accessible to all logged-in users for now) */}
+                            {/* Single Smart Dashboard Link */}
                             <li style={styles.navItem}>
-                                <Link to="/dashboard" style={styles.navLink}>Manager Dashboard</Link>
+                                <Link to="/dashboard" style={styles.navLink}>Dashboard</Link>
                             </li>
                             
-                            {/* Display Username */}
                             <li style={{...styles.navItem, color: '#ffc107', fontWeight: 'bold'}}>
                                 Hello, {user}!
                             </li>
-                            {/* Link to User Profile/Bookings (Future route) */}
                             <li style={styles.navItem}>
-                                <Link to="/profile" style={styles.navLink}>My Bookings</Link>
-                            </li>
-                            {/* Logout Button */}
-                            <li style={styles.navItem}>
-                                <button onClick={logoutUser} style={styles.logoutButton}>
-                                    Logout
-                                </button>
+                                <button onClick={logoutUser} style={styles.logoutButton}>Logout</button>
                             </li>
                         </>
                     ) : ( // If no user (logged out)
