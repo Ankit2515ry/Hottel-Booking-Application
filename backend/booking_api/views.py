@@ -6,6 +6,7 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from django.db.models import Q
 from django.contrib.auth.models import User # For RegisterView
 from .permissions import IsHotelManagerOrReadOnly
+from rest_framework.permissions import IsAuthenticated
 
 from .models import Hotel, Room, Booking
 from .serializers import (
@@ -19,8 +20,7 @@ from .serializers import (
 
 class HotelViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    Handles read-only operations for Hotel objects.
-    Provides /api/hotels/ and /api/hotels/{id}/ (publicly viewable).
+    Handles read-only operations for Hotel objects and includes search action.
     """
     queryset = Hotel.objects.all()
     serializer_class = HotelSerializer
@@ -32,21 +32,17 @@ class HotelViewSet(viewsets.ReadOnlyModelViewSet):
         check_in_str = request.query_params.get('check_in')
         check_out_str = request.query_params.get('check_out')
         city = request.query_params.get('city')
-        # Note: We are ignoring 'guests' filtering for simplicity in this example
         
         # 1. Basic Validation
         if not check_in_str or not check_out_str:
-            return Response({"error": "Check-in and check-out dates are required."}, status=status.HTTP_400_BAD_REQUEST)
+             return Response({"error": "Check-in and check-out dates are required."}, status=status.HTTP_400_BAD_REQUEST)
 
         hotels_qs = Hotel.objects.all()
         if city:
-            # Filter hotels by city (case-insensitive)
             hotels_qs = hotels_qs.filter(city__icontains=city) 
         
         # 2. Find Rooms that are ALREADY BOOKED for the requested period
         overlapping_bookings = Booking.objects.filter(
-            # The requested check-in is BEFORE the existing check-out, AND
-            # The requested check-out is AFTER the existing check-in (i.e., they overlap)
             check_in_date__lt=check_out_str,
             check_out_date__gt=check_in_str
         ).values_list('room_id', flat=True)
@@ -58,10 +54,33 @@ class HotelViewSet(viewsets.ReadOnlyModelViewSet):
             id__in=overlapping_bookings
         ).distinct()
 
-        # We return the available ROOMS, not the hotels, so the frontend knows what is bookable
         serializer = RoomSerializer(available_rooms, many=True)
         return Response(serializer.data)
 
+    
+    # VVVV NEW ACTION FOR MANAGER DASHBOARD VVVV
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def my_hotel(self, request):
+        """
+        Endpoint: /api/hotels/my_hotel/
+        Returns the single hotel instance managed by the requesting authenticated user.
+        """
+        user = request.user
+        
+        # Check 1: Ensure user is linked to a hotel as a manager
+        try:
+            # We assume the Hotel model has a manager=OneToOneField(User)
+            hotel = Hotel.objects.get(manager=user)
+        except Hotel.DoesNotExist:
+            # If the user is authenticated but not linked to a hotel, deny access
+            return Response({"detail": "Access Denied: You are not assigned to manage any hotel."}, 
+                            status=status.HTTP_403_FORBIDDEN)
+        
+        # Check 2: Serialization
+        # We use self.get_serializer() to ensure the HotelSerializer is used, 
+        # which includes the nested room data needed by the dashboard.
+        serializer = self.get_serializer(hotel)
+        return Response(serializer.data)
 
 class RoomViewSet(viewsets.ModelViewSet):
     

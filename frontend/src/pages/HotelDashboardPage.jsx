@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import ProtectedRoute from '../components/ProtectedRoute';
 
 const BASE_URL = 'http://127.0.0.1:8000/api/';
+const MY_HOTEL_URL = 'http://127.0.0.1:8000/api/hotels/my_hotel'
 
 // Component to handle adding a new room
 const AddRoomForm = ({ hotelId, authTokens, onRoomAdded }) => {
@@ -92,8 +93,6 @@ function HotelDashboardPage() {
     const [rooms, setRooms] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    
-    // State to force re-fetch of rooms after a new room is added
     const [refreshRooms, setRefreshRooms] = useState(0);
 
     const fetchDashboardData = async () => {
@@ -101,40 +100,58 @@ function HotelDashboardPage() {
         setError(null);
         
         try {
-            // CRITICAL: We need an endpoint that fetches the hotel managed by the user.
-            // Assuming we use a dedicated action/viewset method on the backend, e.g., /api/hotels/my_hotel/
-            // For now, we'll try to fetch all hotels and rely on Django to filter.
-            const hotelResponse = await axios.get(`${BASE_URL}hotels/`, {
+            // VVVV Use the secure, dedicated endpoint VVVV
+            const hotelResponse = await axios.get(MY_HOTEL_URL, {
                 headers: { Authorization: `Bearer ${authTokens.access}` }
             });
 
-            // Assuming the backend returns only the hotel managed by the user (or an empty array)
-            const managedHotel = hotelResponse.data[0]; 
+            // The backend now returns a single Hotel object (or an error)
+            const managedHotel = hotelResponse.data; 
 
-            if (managedHotel) {
-                setHotel(managedHotel);
-                setRooms(managedHotel.rooms); // Rooms are nested in the HotelSerializer
-            } else {
-                setError("You are not currently assigned to manage any hotel.");
-                setHotel(null);
-                setRooms([]);
-            }
+            setHotel(managedHotel);
+            setRooms(managedHotel.rooms); // Rooms are nested
+
         } catch (err) {
-            console.error("Dashboard data fetch failed:", err);
-            setError("Failed to load dashboard data. Ensure your user is linked to a hotel.");
+            console.error("Dashboard data fetch failed:", err.response || err);
+            
+            // Handle 403 Forbidden or 404 Not Found (User not a manager)
+            if (err.response && (err.response.status === 403 || err.response.status === 404)) {
+                 setError("Access Denied: You are not currently assigned to manage any hotel.");
+            } else {
+                 setError("Failed to load dashboard data. Please check your network connection.");
+            }
+            
+            setHotel(null);
+            setRooms([]);
+
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchDashboardData();
+        // Ensure we only try to fetch if we have tokens
+        if (authTokens) {
+            fetchDashboardData();
+        } else {
+            setLoading(false);
+            setError("You must be logged in to view the dashboard.");
+        }
     }, [authTokens, refreshRooms]); 
-    // refreshRooms dependency ensures data is re-fetched after adding a room
 
     if (loading) return <div style={styles.loading}>Loading Hotel Dashboard...</div>;
-    if (error) return <div style={styles.errorContainer}>{error}</div>;
-    if (!hotel) return <div style={styles.errorContainer}>You are not managing a hotel.</div>;
+    
+    // VVVV Simplified Error/Access Denial Rendering VVVV
+    if (error) {
+        return <div style={styles.errorContainer}>{error}</div>;
+    }
+    
+    // If the error state is clear, but hotel is still null (e.g., fetch returned 403, setting error above)
+    if (!hotel) { 
+        // This case should ideally be caught by the error handler above.
+        // We'll keep the error check for robustness.
+        return <div style={styles.errorContainer}>You are not managing a hotel.</div>;
+    }
 
     return (
         <div style={styles.container}>
