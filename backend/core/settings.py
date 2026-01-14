@@ -128,7 +128,7 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # React / Vite frontend
 TEMPLATES[0]['DIRS'] = [
-    os.join(BASE_DIR, '..', 'frontend', 'dist')
+    os.path.join(BASE_DIR, '..', 'frontend', 'dist')
 ]
 
 # Default primary key field type
