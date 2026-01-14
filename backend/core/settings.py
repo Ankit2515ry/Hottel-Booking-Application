@@ -121,14 +121,14 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'frontend', 'dist'),
+    os.path.join(BASE_DIR, '..', 'frontend', 'dist'),
 ]
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # React / Vite frontend
 TEMPLATES[0]['DIRS'] = [
-    BASE_DIR / 'frontend_build'
+    os.join(BASE_DIR, '..', 'frontend', 'dist')
 ]
 
 # Default primary key field type
@@ -151,3 +151,4 @@ SIMPLE_JWT = {
     "REWARD_TOKEN_LIFETIME": timedelta(days=1),   
 }
 
+CSRF_TRUSTED_ORIGINS = ['https://*.onrender.com']
